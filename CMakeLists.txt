@@ -1,0 +1,8 @@
+cmake_minimum_required (VERSION 2.6)
+project(log4c)
+add_definitions(-std=c++11 -g)
+set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+include_directories(${PROJECT_SOURCE_DIR}/../Public)
+aux_source_directory(. DIRSRCS)
+add_library(${PROJECT_NAME} SHARED ${DIRSRCS} log4c.def)
+target_link_libraries(${PROJECT_NAME} -pthread)
