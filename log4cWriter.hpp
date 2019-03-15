@@ -1,15 +1,13 @@
 #ifndef __LOG4C_WRITER_HPP__
 #define __LOG4C_WRITER_HPP__
 
-#include <fstream>
-#include <string>
 #include <thread>
-#include <mutex>
 #include <future>
 #include <list>
-#include <condition_variable>
 
 #include "log4cManager.hpp"
+
+#include <stl/concurrence/semaphore.hpp>
 
 #define MAX_BUFFER_SIZE		1024*100
 #define MAX_FUNC_NAME_LEN	64
@@ -33,7 +31,7 @@ namespace logger
         unsigned long threadId;
         unsigned long lineNo;
     };
-    
+
     class CWriter
     {
     public:
@@ -42,7 +40,9 @@ namespace logger
         , path_to_save_(path_to_save)
         , manager_(new logger::CManager())
         , exit_task_flag_(false)
-        , last_detail_no_(1)
+        , pre_detail_no_(1)
+		, is_fd_open_(false)
+		, fd_(-1)
         {
 
         }
@@ -58,30 +58,44 @@ namespace logger
             {
                 write(detail);
             }
+			if (is_fd_open_)
+			{
+				io::flush(fd_);
+				io::close(fd_);
+				is_fd_open_ = false;
+			}
         }
 
-        int run()
+        int task()
         {
             Details detail;
             while(!exit_task_flag_.load())
             {
-                while(pop(detail))
-                {
-                    write(detail);
-                }
-                std::this_thread::sleep_for(std::chrono::milliseconds(1));
+				if (deque_event_.wait_for(std::chrono::milliseconds(1)))
+				{
+					while (pop(detail))
+					{
+						write(detail);
+					}
+					if (is_fd_open_)
+					{
+						io::flush(fd_);
+						io::close(fd_);
+						is_fd_open_ = false;
+					}
+				}				
             }
 			return 0;
         }
 
         bool push(const Details& detail)
         {
-            if(!thread_task_.valid())
-            {
-                thread_task_ = std::async(std::launch::async, std::bind(&CWriter::run, this));
+            if(!thread_task_.valid()){
+                thread_task_ = std::async(std::launch::async, std::bind(&CWriter::task, this));
             }
 			std::lock_guard<std::mutex> locker(deque_lock_);
             details_.push_back(detail);
+			deque_event_.post();
             return true;
         }
         bool pop(Details& detail)
@@ -111,39 +125,44 @@ namespace logger
             std::string file = manager_->formatFileName(path_to_save_, name_of_moudle_, detail.time);
 
             bool file_exists = (access(file.c_str(), F_OK) == 0);
-            if(file_exists && !writer_stream_.is_open())
+            if(file_exists && !is_fd_open_)
             {
                 manager_->isRename(file);
             }
 
-            if( writer_stream_.is_open() && \
-                manager_->detectDateChanged(last_write_detail_time_, detail.time) )
+            if( is_fd_open_ && \
+                manager_->detectDateChanged(pre_time_, detail.time) )
             {
-                writer_stream_.close();
+				io::flush(fd_);
+				io::close(fd_);
+				is_fd_open_ = false;
             }
 
-            if(!writer_stream_.is_open())
-            {
-                writer_stream_.open(file.c_str(), std::ios_base::in|std::ios_base::out|\
-                                                  std::ios_base::app|std::ios_base::binary);
-                if(!writer_stream_.is_open())
-                {
-                    return;
-                }
-            }
+			if (!is_fd_open_)
+			{
+#ifdef __os_windows__
+				fd_ = io::open(file.c_str(), _O_APPEND | _O_CREAT | _O_BINARY | _O_RDWR, _S_IREAD | _S_IWRITE);
+#else
+				fd_ = io::open(file.c_str(), O_APPEND | O_CREAT | O_RDWR/*|O_SYNC*/, S_IREAD | S_IWRITE);
+#endif
+				if (fd_ == -1)
+				{
+					return;
+				}
+			}
             std::unique_ptr<char[]> buffer(new char[MAX_BUFFER_SIZE]());
             int bufferLen = 0;
-            last_detail_no_ = 1;
+			pre_detail_no_ = 1;
             if(!file_exists)
             {
-                memcpy(&buffer[0], &last_detail_no_, MAX_RECORD_NO_LEN);
+                memcpy(&buffer[0], &pre_detail_no_, MAX_RECORD_NO_LEN);
                 bufferLen += MAX_RECORD_NO_LEN;
             }
             else
             {
-                writer_stream_.seekg(-MAX_RECORD_NO_LEN, std::ios_base::end);
-                writer_stream_.read((char*)&last_detail_no_, MAX_RECORD_NO_LEN);
-                writer_stream_.seekg(0, std::ios_base::end);
+				io::lseek(fd_, -MAX_RECORD_NO_LEN, SEEK_END);
+				io::read(fd_, &pre_detail_no_, MAX_RECORD_NO_LEN);
+				io::lseek(fd_, 0, SEEK_END);
             }
 
 			auto _append_buffer_func = [&](void* param, int len)->void{
@@ -151,7 +170,7 @@ namespace logger
 				bufferLen += len;
 			};
 
-            last_write_detail_time_ = detail.time;
+            pre_time_ = detail.time;
 
 			_append_buffer_func((void*)detail.layer.c_str(), MAX_LAYER_NAME_LEN);
 
@@ -159,7 +178,7 @@ namespace logger
 
 			_append_buffer_func((void*)detail.type.c_str(), MAX_TYPE_LEN);
 
-            std::string name = stl::os::file::name(detail.file);
+            std::string name = file::name(detail.file);
 
 			_append_buffer_func((void*)name.c_str(), MAX_FILE_NAME_LEN);
 
@@ -177,12 +196,10 @@ namespace logger
 
 			_append_buffer_func((void*)detail.content.c_str(), contentLen);
 
-            last_detail_no_++;
-			_append_buffer_func((void*)&last_detail_no_, MAX_RECORD_NO_LEN);
+            pre_detail_no_++;
+			_append_buffer_func((void*)&pre_detail_no_, MAX_RECORD_NO_LEN);
 
-            writer_stream_.write(&buffer[0], bufferLen);
-			writer_stream_.flush();
-			writer_stream_.close();
+			io::write(fd_, &buffer[0], bufferLen);
             return;
         }
     private:
@@ -190,12 +207,15 @@ namespace logger
         std::atomic<bool> exit_task_flag_;
         std::future<int> thread_task_;
 
+		stl::concurrence::CSemaphore deque_event_;
 		std::mutex deque_lock_;
 
-        tmExtend last_write_detail_time_;
-        int last_detail_no_;
+        tmExtend pre_time_;
+        int pre_detail_no_;
 
-        std::fstream writer_stream_;
+		std::atomic<bool> is_fd_open_;
+		std::atomic<int> fd_;
+
         std::list<Details> details_;
         std::string name_of_moudle_;
         std::string path_to_save_;

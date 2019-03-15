@@ -7,6 +7,7 @@
 #include <stl/os/file.hpp>
 
 using namespace stl::time;
+using namespace stl::os;
 
 namespace logger
 {
