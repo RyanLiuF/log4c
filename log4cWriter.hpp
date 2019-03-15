@@ -14,7 +14,7 @@
 #define MAX_LAYER_NAME_LEN	32
 #define MAX_FILE_NAME_LEN	32
 #define MAX_RECORD_NO_LEN	4
-#define MAX_THREAD_ID_LEN	4
+#define MAX_THREAD_ID_LEN	8
 #define MAX_TYPE_LEN		8
 
 namespace logger
@@ -47,7 +47,7 @@ namespace logger
 
         }
         virtual ~CWriter()
-        {
+        {		
             exit_task_flag_.store(true);
             if(thread_task_.valid())
             {
@@ -143,7 +143,9 @@ namespace logger
 				}
 			}
 			is_fd_open_ = true;
-            std::unique_ptr<char[]> buffer(new char[MAX_BUFFER_SIZE]());
+            //std::unique_ptr<char[]> buffer(new char[MAX_BUFFER_SIZE]());//spend more time
+			char buffer[MAX_BUFFER_SIZE];
+			memset(&buffer[0], 0x00, sizeof(buffer));
             int bufferLen = 0;
 			pre_detail_no_ = 1;
             if(!file_exists)
@@ -179,7 +181,7 @@ namespace logger
 
 			_append_buffer_func((void*)detail.func.c_str(), MAX_FUNC_NAME_LEN);
 
-			_append_buffer_func((void*)detail.isCrypt ? "E" : "D", 1);
+			_append_buffer_func(detail.isCrypt ? (void*)"E" : (void*)"D", 1);
 
 			_append_buffer_func((void*)&detail.threadId, MAX_THREAD_ID_LEN);
 

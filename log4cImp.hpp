@@ -5,7 +5,7 @@
 #include <stl/algorithm/base.hpp>
 #include <stl/stringhelper.hpp>
 #include "log4cWriter.hpp"
-
+#include <stdarg.h>
 
 namespace logger
 {
@@ -114,7 +114,9 @@ namespace logger
             detail.lineNo = lineno;
             detail.func = func;
             detail.time = GetLocalTime();
-            std::unique_ptr<char[]> buffer(new char[1024*10+1]());
+            //std::unique_ptr<char[]> buffer(new char[1024*10+1]());
+			char buffer[1024 * 10 + 1];
+			memset(&buffer[0], 0x00, sizeof(buffer));
             va_list ap;
             va_start(ap, format);
             vsnprintf(&buffer[0], 1024*10, format, ap);

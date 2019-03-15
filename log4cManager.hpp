@@ -61,7 +61,7 @@ namespace logger
             sprintf(&currenPath[0], "%04d-%02d", lastYear, lastMonth);
             for (auto path : traversor)
             {
-                if (stl::os::file::name(path) < &currenPath[0])
+                if (file::name(path) < &currenPath[0])
                 {
                     path::rmdir(path);
                 }
