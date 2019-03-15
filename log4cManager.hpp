@@ -41,7 +41,7 @@ namespace logger
         void clearExpiryDirectory(const std::string& dir, const tmExtend& time)
         {
             std::vector<std::string> traversor;
-            stl::os::path::traverse_only_current(dir, traversor);
+            path::traverse_only_current(dir, traversor);
             if (traversor.empty())
             {
                 return;
@@ -63,14 +63,14 @@ namespace logger
             {
                 if (stl::os::file::name(path) < &currenPath[0])
                 {
-                    stl::os::path::rmdir(path);
+                    path::rmdir(path);
                 }
             }
         }
 
         bool isRename(const std::string& file)
         {
-            auto fileSize = stl::os::io::GetFileSize(file);
+            auto fileSize = io::GetFileSize(file);
             if(fileSize > file_size_*1024*1024)
             {
                 std::unique_ptr<char[]> tmp(new char[MAX_LOG_PATH]());
@@ -96,7 +96,7 @@ namespace logger
             {
                 //delete or check the expired directory while only ready to create new directory
                 clearExpiryDirectory(path, time);
-                stl::os::path::mkdir(&buffer[0]);
+                path::mkdir(&buffer[0]);
             }
             return (std::string)&buffer[0];
         }

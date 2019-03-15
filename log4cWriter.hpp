@@ -58,12 +58,7 @@ namespace logger
             {
                 write(detail);
             }
-			if (is_fd_open_)
-			{
-				io::flush(fd_);
-				io::close(fd_);
-				is_fd_open_ = false;
-			}
+			closefile();
         }
 
         int task()
@@ -77,12 +72,7 @@ namespace logger
 					{
 						write(detail);
 					}
-					if (is_fd_open_)
-					{
-						io::flush(fd_);
-						io::close(fd_);
-						is_fd_open_ = false;
-					}
+					closefile();
 				}				
             }
 			return 0;
@@ -122,12 +112,14 @@ namespace logger
         }
         void write(const Details& detail)
         {
+			std::lock_guard<std::mutex> locker(file_lock_);
             std::string file = manager_->formatFileName(path_to_save_, name_of_moudle_, detail.time);
 
-            bool file_exists = (access(file.c_str(), F_OK) == 0);
+            bool file_exists = (0 == access(file.c_str(), F_OK));
             if(file_exists && !is_fd_open_)
             {
-                manager_->isRename(file);
+				// the file will not exist after rename
+				file_exists = !manager_->isRename(file);
             }
 
             if( is_fd_open_ && \
@@ -150,6 +142,7 @@ namespace logger
 					return;
 				}
 			}
+			is_fd_open_ = true;
             std::unique_ptr<char[]> buffer(new char[MAX_BUFFER_SIZE]());
             int bufferLen = 0;
 			pre_detail_no_ = 1;
@@ -202,6 +195,17 @@ namespace logger
 			io::write(fd_, &buffer[0], bufferLen);
             return;
         }
+	private:
+		inline void closefile()
+		{
+			std::lock_guard<std::mutex> locker(file_lock_);
+			if (is_fd_open_)
+			{
+				io::flush(fd_);
+				io::close(fd_);
+				is_fd_open_ = false;
+			}
+		}
     private:
         std::shared_ptr<logger::CManager> manager_;
         std::atomic<bool> exit_task_flag_;
@@ -210,11 +214,12 @@ namespace logger
 		stl::concurrence::CSemaphore deque_event_;
 		std::mutex deque_lock_;
 
+		std::atomic<bool> is_fd_open_;
+		std::atomic<int>  fd_;
+		std::mutex file_lock_;
+
         tmExtend pre_time_;
         int pre_detail_no_;
-
-		std::atomic<bool> is_fd_open_;
-		std::atomic<int> fd_;
 
         std::list<Details> details_;
         std::string name_of_moudle_;
