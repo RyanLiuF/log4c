@@ -47,7 +47,7 @@ namespace logger
 
         }
         virtual ~CWriter()
-        {		
+        {
             exit_task_flag_.store(true);
             if(thread_task_.valid())
             {
@@ -73,7 +73,7 @@ namespace logger
 						write(detail);
 					}
 					closefile();
-				}				
+				}			
             }
 			return 0;
         }
@@ -142,10 +142,9 @@ namespace logger
 					return;
 				}
 			}
+
 			is_fd_open_ = true;
-            //std::unique_ptr<char[]> buffer(new char[MAX_BUFFER_SIZE]());//spend more time
-			char buffer[MAX_BUFFER_SIZE];
-			memset(&buffer[0], 0x00, sizeof(buffer));
+            std::unique_ptr<char[]> buffer(new char[MAX_BUFFER_SIZE]());
             int bufferLen = 0;
 			pre_detail_no_ = 1;
             if(!file_exists)
@@ -160,41 +159,41 @@ namespace logger
 				io::lseek(fd_, 0, SEEK_END);
             }
 
-			auto _append_buffer_func = [&](void* param, int len)->void{
+			auto _append_buffer_func = [&](void* param, int len, int max)->void{
 				memcpy(&buffer[bufferLen], param, len);
-				bufferLen += len;
+				bufferLen += max;
 			};
 
             pre_time_ = detail.time;
 
-			_append_buffer_func((void*)detail.layer.c_str(), MAX_LAYER_NAME_LEN);
+			_append_buffer_func((void*)detail.layer.c_str(), detail.layer.size(), MAX_LAYER_NAME_LEN);
 
-			_append_buffer_func((void*)&detail.time, sizeof(tmExtend));
+			_append_buffer_func((void*)&detail.time, sizeof(tmExtend), sizeof(tmExtend));
 
-			_append_buffer_func((void*)detail.type.c_str(), MAX_TYPE_LEN);
-
+			_append_buffer_func((void*)detail.type.c_str(), detail.type.size(), MAX_TYPE_LEN);
+            
             std::string name = file::name(detail.file);
 
-			_append_buffer_func((void*)name.c_str(), MAX_FILE_NAME_LEN);
+			_append_buffer_func((void*)name.c_str(), name.size(), MAX_FILE_NAME_LEN);
 
-			_append_buffer_func((void*)&detail.lineNo, MAX_RECORD_NO_LEN);
+			_append_buffer_func((void*)&detail.lineNo, MAX_RECORD_NO_LEN, MAX_RECORD_NO_LEN);
 
-			_append_buffer_func((void*)detail.func.c_str(), MAX_FUNC_NAME_LEN);
+			_append_buffer_func((void*)detail.func.c_str(), detail.func.size(), MAX_FUNC_NAME_LEN);
 
-			_append_buffer_func(detail.isCrypt ? (void*)"E" : (void*)"D", 1);
+			_append_buffer_func(detail.isCrypt ? (void*)"E" : (void*)"D", 1, 1);
 
-			_append_buffer_func((void*)&detail.threadId, MAX_THREAD_ID_LEN);
+			_append_buffer_func((void*)&detail.threadId, MAX_THREAD_ID_LEN, MAX_THREAD_ID_LEN);
 
             int leftLen = MAX_BUFFER_SIZE - bufferLen - MAX_RECORD_NO_LEN;
             int contentLen = detail.content.size()<leftLen?detail.content.size():leftLen;
-			_append_buffer_func((void*)&contentLen, MAX_RECORD_NO_LEN);
+			_append_buffer_func((void*)&contentLen, MAX_RECORD_NO_LEN, MAX_RECORD_NO_LEN);
 
-			_append_buffer_func((void*)detail.content.c_str(), contentLen);
+			_append_buffer_func((void*)detail.content.c_str(), contentLen, contentLen);
 
             pre_detail_no_++;
-			_append_buffer_func((void*)&pre_detail_no_, MAX_RECORD_NO_LEN);
+			_append_buffer_func((void*)&pre_detail_no_, MAX_RECORD_NO_LEN, MAX_RECORD_NO_LEN);
 
-			io::write(fd_, &buffer[0], bufferLen);
+			io::write(fd_, &buffer[0], bufferLen); 
             return;
         }
 	private:

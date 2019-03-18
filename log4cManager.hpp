@@ -103,7 +103,7 @@ namespace logger
 
         bool detectDateChanged(const tmExtend& cur, const tmExtend& pre)
         {
-            return (0==memcmp(&cur.tm_mday, &pre.tm_mday, sizeof(pre.tm_year)*(&pre.tm_year-&pre.tm_hour)));
+            return (0!=memcmp(&cur.tm_mday, &pre.tm_mday, sizeof(pre.tm_year)*(&pre.tm_year-&pre.tm_hour)));
         }
 
         std::string formatFileName( const std::string& path, 
