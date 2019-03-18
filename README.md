@@ -8,7 +8,21 @@
  + setTraceLevel 设置日志等级，具体请查看ILog4C::elog_level
  + setExpiryDate 设置自动清理期限，单位为月
  + log(elog_level level, const char* layer, const char* file, int lineno, const char* func, int len, const char*    varName, const unsigned char* hexStream)
+    + level  日志等级
+    + layer  层次名
+    + file   文件名(__FILE__)
+    + lineno 行号(__LINE__)
+    + func 函数名(__FUNCTION__)
+    + len 长度(二进制数据流的长度)
+    + varName 变量名
+    + hexStream 二进制流数据
  + log(elog_level level, const char* layer, const char* file, int lineno, const char* func, const char* format,     ...)
+    + level  日志等级
+    + layer  层次名
+    + file   文件名(__FILE__)
+    + lineno 行号(__LINE__)
+    + func 函数名(__FUNCTION__)
+    + format 格式(e.g: "%s%d%c...")
  ## 严格按日志等级来区分;
  + ILog4C::Debug
  + ILog4C::Warning
@@ -53,21 +67,24 @@
                 module = "MoudleDefault"; break;
             }
 
-            std::unique_ptr<char[]> buffer(new char[1024]());
             for (int k = 0; k < i; k++)
             {
-                memset(&buffer[0], 0x00, 1024);
-                sprintf(&buffer[0], "%04d", k);
-                ptr->log(ILog4C::Debug, module.c_str(), __FILE__, __LINE__, __FUNCTION__, &buffer[0]);
-                ptr->log(ILog4C::Warning, module.c_str(), __FILE__, __LINE__, __FUNCTION__, &buffer[0]);
-                ptr->log(ILog4C::Infor, module.c_str(), __FILE__, __LINE__, __FUNCTION__, &buffer[0]);
-                ptr->log(ILog4C::Error, module.c_str(), __FILE__, __LINE__, __FUNCTION__, &buffer[0]);
+                ptr->log(ILog4C::Debug, module.c_str(), __FILE__, __LINE__, __FUNCTION__, "%04d", k);
+                ptr->log(ILog4C::Warning, module.c_str(), __FILE__, __LINE__, __FUNCTION__, "%04d", k);
+                ptr->log(ILog4C::Infor, module.c_str(), __FILE__, __LINE__, __FUNCTION__, "%04d", k);
+                ptr->log(ILog4C::Error, module.c_str(), __FILE__, __LINE__, __FUNCTION__, "%04d", k);
             }
         };
-        auto thread1 = async(launch::async, f, 2000);
+        auto thread1 = async(launch::async, f, 2000, 0);
         auto thread2 = async(launch::async, f, 2000, 1);
+        auto thread3 = async(launch::async, f, 2000, 2);
+        auto thread4 = async(launch::async, f, 2000, 3);
+        auto thread5 = async(launch::async, f, 2000, 4);
         thread1.get();
  	    thread2.get();
+        thread3.get();
+        thread4.get();
+        thread5.get();
         std::cout << "using:" <<stl::time::tick() - start << "ms" << std::endl;
         return 0;
     }
