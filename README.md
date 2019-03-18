@@ -2,7 +2,18 @@
  ## 支持多线程、多进程并发调用;
  ## 支持跨平台(Android/Linux/Windows);
  ## 支持日志加密;
+ ## 接口说明
+ + setRoot 设置根目录，如APP01，如果日志路径设置为：/tmp/，那么最终日志存储的路径为：/tmp/APP01/
+ + setFileSize 设置单个日志文件大小，单位为MB
+ + setTraceLevel 设置日志等级，具体请查看ILog4C::elog_level
+ + setExpiryDate 设置自动清理期限，单位为月
+ + log(elog_level level, const char* layer, const char* file, int lineno, const char* func, int len, const char*    varName, const unsigned char* hexStream)
+ + log(elog_level level, const char* layer, const char* file, int lineno, const char* func, const char* format,     ...)
  ## 严格按日志等级来区分;
+ + ILog4C::Debug
+ + ILog4C::Warning
+ + ILog4C::Infor
+ + ILog4C::Error
  ## 提供配套日志查看工具，git路径 [https://github.com/RyanLiuF/log4cView]
  ## 使用示例
     #include <ILog4C.h>
