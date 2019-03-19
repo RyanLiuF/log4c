@@ -10,9 +10,9 @@
  + log(elog_level level, const char* layer, const char* file, int lineno, const char* func, int len, const char*    varName, const unsigned char* hexStream)
     + level  日志等级
     + layer  层次名
-    + file   文件名(__FILE__)
-    + lineno 行号(__LINE__)
-    + func 函数名(__FUNCTION__)
+    + file   文件名
+    + lineno 行号
+    + func 函数名
     + len 长度(二进制数据流的长度)
     + varName 变量名
     + hexStream 二进制流数据
