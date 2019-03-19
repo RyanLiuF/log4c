@@ -19,9 +19,9 @@
  + log(elog_level level, const char* layer, const char* file, int lineno, const char* func, const char* format,     ...)
     + level  日志等级
     + layer  层次名
-    + file   文件名(__FILE__)
-    + lineno 行号(__LINE__)
-    + func 函数名(__FUNCTION__)
+    + file   文件名
+    + lineno 行号
+    + func 函数名
     + format 格式(e.g: "%s%d%c...")
  ## 严格按日志等级来区分;
  + ILog4C::Debug
