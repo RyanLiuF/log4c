@@ -21,13 +21,13 @@ namespace logger
 {
     struct Details
     {
+        bool        isCrypt;
         std::string layer;
         std::string type;
         std::string file;
         std::string func;
         std::string content;
         tmExtend    time;
-        bool        isCrypt;
         unsigned long threadId;
         unsigned long lineNo;
     };
