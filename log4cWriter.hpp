@@ -44,18 +44,15 @@ namespace logger
 		, is_fd_open_(false)
 		, fd_(-1)
         {
-
         }
         virtual ~CWriter()
         {
             exit_task_flag_.store(true);
-            if(thread_task_.valid())
-            {
+            if(thread_task_.valid()){
                 thread_task_.get();
             }
 			Details detail;
-            while(pop(detail))
-            {
+            while(pop(detail)){
                 write(detail);
             }
 			closefile();
@@ -64,12 +61,9 @@ namespace logger
         int task()
         {
             Details detail;
-            while(!exit_task_flag_.load())
-            {
-				if (deque_event_.wait_for(std::chrono::milliseconds(1)))
-				{
-					while (pop(detail))
-					{
+            while(!exit_task_flag_.load()){
+				if (deque_event_.wait_for(std::chrono::milliseconds(1))){
+					while (pop(detail)){
 						write(detail);
 					}
 					closefile();
@@ -113,32 +107,30 @@ namespace logger
         void write(const Details& detail)
         {
 			std::lock_guard<std::mutex> locker(file_lock_);
-            std::string file = manager_->formatFileName(path_to_save_, name_of_moudle_, detail.time);
+            std::string file = manager_->formatFileName(path_to_save_, \
+                                                        name_of_moudle_, \
+                                                        detail.time);
 
             bool file_exists = (0 == access(file.c_str(), F_OK));
-            if(file_exists && !is_fd_open_)
-            {
+            if(file_exists && !is_fd_open_){
 				// the file will not exist after rename
 				file_exists = !manager_->isRename(file);
             }
 
             if( is_fd_open_ && \
-                manager_->detectDateChanged(pre_time_, detail.time) )
-            {
+                manager_->detectDateChanged(pre_time_, detail.time) ){
 				io::flush(fd_);
 				io::close(fd_);
 				is_fd_open_ = false;
             }
 
-			if (!is_fd_open_)
-			{
+			if (!is_fd_open_){
 #ifdef __os_windows__
 				fd_ = io::open(file.c_str(), _O_APPEND | _O_CREAT | _O_BINARY | _O_RDWR, _S_IREAD | _S_IWRITE);
 #else
 				fd_ = io::open(file.c_str(), O_APPEND | O_CREAT | O_RDWR/*|O_SYNC*/, S_IREAD | S_IWRITE);
 #endif
-				if (fd_ == -1)
-				{
+				if (-1 == fd_){
 					return;
 				}
 			}
@@ -147,13 +139,10 @@ namespace logger
             std::unique_ptr<char[]> buffer(new char[MAX_BUFFER_SIZE]());
             int bufferLen = 0;
 			pre_detail_no_ = 1;
-            if(!file_exists)
-            {
+            if(!file_exists){
                 memcpy(&buffer[0], &pre_detail_no_, MAX_RECORD_NO_LEN);
                 bufferLen += MAX_RECORD_NO_LEN;
-            }
-            else
-            {
+            }else{
 				io::lseek(fd_, -MAX_RECORD_NO_LEN, SEEK_END);
 				io::read(fd_, &pre_detail_no_, MAX_RECORD_NO_LEN);
 				io::lseek(fd_, 0, SEEK_END);
@@ -197,11 +186,9 @@ namespace logger
             return;
         }
 	private:
-		inline void closefile()
-		{
+		inline void closefile(){
 			std::lock_guard<std::mutex> locker(file_lock_);
-			if (is_fd_open_)
-			{
+			if (is_fd_open_){
 				io::flush(fd_);
 				io::close(fd_);
 				is_fd_open_ = false;

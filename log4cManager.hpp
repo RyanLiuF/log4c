@@ -42,27 +42,21 @@ namespace logger
         {
             std::vector<std::string> traversor;
             path::traverse_only_current(dir, traversor);
-            if (traversor.empty())
-            {
+            if (traversor.empty()){
                 return;
             }
             std::unique_ptr<char[]> currenPath(new char[MAX_LOG_PATH]());
             int lastYear, lastMonth;
-            if(time.tm_mon < expiry_month_)
-            {
+            if(time.tm_mon < expiry_month_){
                 lastMonth = time.tm_mon - expiry_month_ + 12 + 1;
                 lastYear = time.tm_year - 1;
-            }
-            else
-            {
+            }else{
                 lastMonth = time.tm_mon - expiry_month_ + 1;
                 lastYear = time.tm_year;
             }
             sprintf(&currenPath[0], "%04d-%02d", lastYear, lastMonth);
-            for (auto path : traversor)
-            {
-                if (file::name(path) < &currenPath[0])
-                {
+            for (auto path : traversor){
+                if (file::name(path) < &currenPath[0]){
                     path::rmdir(path);
                 }
             }
@@ -71,15 +65,12 @@ namespace logger
         bool isRename(const std::string& file)
         {
             auto fileSize = io::GetFileSize(file);
-            if(fileSize > file_size_*1024*1024)
-            {
+            if(fileSize > file_size_*1024*1024){
                 std::unique_ptr<char[]> tmp(new char[MAX_LOG_PATH]());
-                for (int i=0; ; i++)
-                {
+                for (int i=0; ; i++){
                     memset(&tmp[0], 0x00, MAX_LOG_PATH);
                     sprintf(&tmp[0], "%s_%d.%s", file.substr(0, file.rfind('.')).c_str(), i, LOG_APPEND_FIX);
-                    if (0 != access(&tmp[0], F_OK))
-                    {
+                    if (0 != access(&tmp[0], F_OK)){
                         rename(file.c_str(), &tmp[0]);
                         return true;
                     }
@@ -91,9 +82,10 @@ namespace logger
         std::string createLogDirectory(const std::string& path, const tmExtend& time)
         {
             std::unique_ptr<char[]> buffer(new char[MAX_LOG_PATH]());
-            sprintf(&buffer[0], "%s%s%04d-%02d%s%02d-%02d", path.c_str(), SEPRATOR, time.tm_year, time.tm_mon, SEPRATOR, time.tm_mon, time.tm_mday);
-            if(0 != access(&buffer[0], F_OK))
-            {
+            sprintf(&buffer[0], "%s%s%04d-%02d%s%02d-%02d", path.c_str(), SEPRATOR, \
+                                                            time.tm_year, time.tm_mon, SEPRATOR, \
+                                                            time.tm_mon, time.tm_mday);
+            if(0 != access(&buffer[0], F_OK)){
                 //delete or check the expired directory while only ready to create new directory
                 clearExpiryDirectory(path, time);
                 path::mkdir(&buffer[0]);

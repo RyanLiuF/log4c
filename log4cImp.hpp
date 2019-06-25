@@ -17,8 +17,7 @@ namespace logger
         , log_of_path_(path)
         , log_trace_level_(0x1111)
         {
-            if(log_writer_map_.find(log_of_module_) == log_writer_map_.end())
-            {
+            if(log_writer_map_.find(log_of_module_) == log_writer_map_.end()){
                 log_writer_map_[log_of_module_] = std::make_shared<CWriter>(log_of_module_, log_of_path_);
             }
         }
@@ -28,8 +27,7 @@ namespace logger
         virtual void setRoot(const char* directory) override
         {
             std::lock_guard<std::mutex> lock(writer_locker_);
-            if (log_writer_map_.find(log_of_module_) != log_writer_map_.end())
-            {
+            if (log_writer_map_.find(log_of_module_) != log_writer_map_.end()){
                 log_writer_map_[log_of_module_]->setRoot(directory);
             }
             return ;
@@ -37,8 +35,7 @@ namespace logger
         virtual void setFileSize(int size) override
         {
             std::lock_guard<std::mutex> lock(writer_locker_);
-            if (log_writer_map_.find(log_of_module_) != log_writer_map_.end())
-            {
+            if (log_writer_map_.find(log_of_module_) != log_writer_map_.end()){
                 log_writer_map_[log_of_module_]->setFileSize(size);
             }
             return ;
@@ -52,8 +49,7 @@ namespace logger
         virtual void setExpiryDate(int month) override
         {
             std::lock_guard<std::mutex> lock(writer_locker_);
-            if (log_writer_map_.find(log_of_module_) != log_writer_map_.end())
-            {
+            if (log_writer_map_.find(log_of_module_) != log_writer_map_.end()){
                 log_writer_map_[log_of_module_]->setExpiryDate(month);
             }
             return ;
@@ -70,8 +66,7 @@ namespace logger
             detail.lineNo = lineno;
             detail.func = func;
             detail.time = GetLocalTime();
-            switch(level&log_trace_level_)
-            {
+            switch(level&log_trace_level_){
             case Debug:
                 detail.type = "DEBUG";
                 break;
@@ -97,8 +92,7 @@ namespace logger
             detail.content = stl::algorithm::base64::encode(tmp);
 
             std::lock_guard<std::mutex> lock(writer_locker_);
-            if (log_writer_map_.find(log_of_module_) != log_writer_map_.end())
-            {
+            if (log_writer_map_.find(log_of_module_) != log_writer_map_.end()){
                 log_writer_map_[log_of_module_]->push(detail);
             }
             return ;
@@ -114,9 +108,7 @@ namespace logger
             detail.lineNo = lineno;
             detail.func = func;
             detail.time = GetLocalTime();
-            //std::unique_ptr<char[]> buffer(new char[1024*10+1]());
-			char buffer[1024 * 10 + 1];
-			memset(&buffer[0], 0x00, sizeof(buffer));
+            std::unique_ptr<char[]> buffer(new char[1024*10+1]());
             va_list ap;
             va_start(ap, format);
             vsnprintf(&buffer[0], 1024*10, format, ap);
@@ -144,9 +136,8 @@ namespace logger
             detail.isCrypt = true;
             detail.threadId = stl::lexical::as<unsigned long, std::thread::id>(std::this_thread::get_id());
 
-           std::lock_guard<std::mutex> lock(writer_locker_);
-            if (log_writer_map_.find(log_of_module_) != log_writer_map_.end())
-            {
+            std::lock_guard<std::mutex> lock(writer_locker_);
+            if (log_writer_map_.find(log_of_module_) != log_writer_map_.end()){
                 log_writer_map_[log_of_module_]->push(detail);
             }
             return ;
