@@ -1,12 +1,15 @@
-# log4c 基于C++11的轻量级日志库
- ## 支持多线程、多进程并发调用;
- ## 支持跨平台(Android/Linux/Windows);
- ## 支持日志加密;
- ## 接口说明
+# log4c 基于C++11的轻量级日志库(the lightweight logger library base on C++11)
+ ## 支持多线程、多进程并发调用(Support multi-threaded, multi-process concurrent invokes);
+ ## 支持跨平台(Support the crossplatform e.g : Android, Linux, Windows);
+ ## 支持日志加密(Support encrypt the log data);
+ ## 接口说明(Interface description)
  + setRoot 设置根目录，如APP01，如果日志路径设置为：/tmp/，那么最终日志存储的路径为：/tmp/APP01/
+           (Set the root directory)
  + setFileSize 设置单个日志文件大小，单位为MB
+               (Set the size of single file in MB)
  + setTraceLevel 设置日志等级，具体请查看ILog4C::elog_level
- + setExpiryDate 设置自动清理期限，单位为月
+                (Set the level of logger)
+ + setExpiryDate 设置自动清理期限，单位为月(Set automatic cleanup deadlines)
  + log(elog_level level, const char* layer, const char* file, int lineno, const char* func, int len, const char*    varName, const unsigned char* hexStream)
     + level  日志等级
     + layer  层次名
@@ -28,8 +31,8 @@
  + ILog4C::Warning
  + ILog4C::Infor
  + ILog4C::Error
- ## 提供配套日志查看工具，git路径 [https://github.com/RyanLiuF/log4cView]
- ## 使用示例
+ ## 提供配套日志查看工具，git路径 [https://github.com/RyanLiuF/log4cView](Provide the logger viewing tools to analysis the log file)
+ ## 使用示例(Demo)
     #include <ILog4C.h>
     #include <stl/os/path.hpp>
     #include <stl/utility/module.hpp>
